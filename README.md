@@ -17,7 +17,7 @@ On a machine with network access to login to your Kubernetes Control Plane and a
    -- INFO:werkzeug:Press CTRL+C to quit
  - In a browser, open up http://127.0.0.1:5000 / You should see a webpage with your Cluster information with the title "Kubernetes Cluster Dashboard"
  
-## Running the my version app
+## Running my version of the app
 On a machine with network access to login to your Kubernetes Control Plane and a Kubeconfig file or a POD running inside a Kubernetes cluster (Will try both to login)
  - The my-k8s-web-app.py uses the ./templates/my-k8s-web-app-page.html  html template.
  - cd ./k8s-api
