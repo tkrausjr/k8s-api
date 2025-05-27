@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Kubernetes Cluster Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: #326ce5; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .section { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .status-running { color: #28a745; font-weight: bold; }
+        .status-pending { color: #ffc107; font-weight: bold; }
+        .status-failed { color: #dc3545; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #ddd; }
+        th { background-color: #f8f9fa; font-weight: bold; }
+        .refresh-btn { background: #326ce5; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 10px 0; }
+        .refresh-btn:hover { background: #2451a3; }
+        .error { color: #dc3545; padding: 10px; background: #f8d7da; border-radius: 4px; margin: 10px 0; }
+        .loading { text-align: center; padding: 20px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚢 Kubernetes Cluster Dashboard</h1>
+            <p>Monitor your cluster resources in real-time</p>
+        </div>
+
+        <button class="refresh-btn" onclick="location.reload()">🔄 Refresh Data</button>
+
+        <!-- Cluster Info -->
+        <div class="section">
+            <h2>📊 Cluster Overview</h2>
+            <div id="cluster-info">
+                <div class="loading">Loading cluster information...</div>
+            </div>
+        </div>
+
+        <!-- Nodes -->
+        <div class="section">
+            <h2>🖥️ Nodes</h2>
+            <div id="nodes">
+                <div class="loading">Loading nodes...</div>
+            </div>
+        </div>
+
+        <!-- Pods -->
+        <div class="section">
+            <h2>🐋 Pods</h2>
+            <div id="pods">
+                <div class="loading">Loading pods...</div>
+            </div>
+        </div>
+
+        <!-- Services -->
+        <div class="section">
+            <h2>🌐 Services</h2>
+            <div id="services">
+                <div class="loading">Loading services...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function getStatusClass(status) {
+            if (status === 'Running' || status === 'Ready') return 'status-running';
+            if (status === 'Pending') return 'status-pending';
+            return 'status-failed';
+        }
+
+        function loadClusterInfo() {
+            fetch('/api/cluster-info')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        document.getElementById('cluster-info').innerHTML = `<div class="error">Error: ${data.error}</div>`;
+                        return;
+                    }
+                    document.getElementById('cluster-info').innerHTML = `
+                        <p><strong>Kubernetes Version:</strong> ${data.version}</p>
+                        <p><strong>Total Nodes:</strong> ${data.node_count}</p>
+                        <p><strong>Total Pods:</strong> ${data.pod_count}</p>
+                        <p><strong>Total Services:</strong> ${data.service_count}</p>
+                    `;
+                })
+                .catch(error => {
+                    document.getElementById('cluster-info').innerHTML = `<div class="error">Failed to load cluster info: ${error}</div>`;
+                });
+        }
+
+        function loadNodes() {
+            fetch('/api/nodes')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        document.getElementById('nodes').innerHTML = `<div class="error">Error: ${data.error}</div>`;
+                        return;
+                    }
+                    let html = '<table><tr><th>Name</th><th>Status</th><th>Version</th><th>OS</th><th>CPU</th><th>Memory</th></tr>';
+                    data.nodes.forEach(node => {
+                        html += `<tr>
+                            <td>${node.name}</td>
+                            <td><span class="${getStatusClass(node.status)}">${node.status}</span></td>
+                            <td>${node.version}</td>
+                            <td>${node.os}</td>
+                            <td>${node.cpu}</td>
+                            <td>${node.memory}</td>
+                        </tr>`;
+                    });
+                    html += '</table>';
+                    document.getElementById('nodes').innerHTML = html;
+                })
+                .catch(error => {
+                    document.getElementById('nodes').innerHTML = `<div class="error">Failed to load nodes: ${error}</div>`;
+                });
+        }
+
+        function loadPods() {
+            fetch('/api/pods')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        document.getElementById('pods').innerHTML = `<div class="error">Error: ${data.error}</div>`;
+                        return;
+                    }
+                    let html = '<table><tr><th>Name</th><th>Namespace</th><th>Status</th><th>Ready</th><th>Restarts</th><th>Age</th></tr>';
+                    data.pods.forEach(pod => {
+                        html += `<tr>
+                            <td>${pod.name}</td>
+                            <td>${pod.namespace}</td>
+                            <td><span class="${getStatusClass(pod.status)}">${pod.status}</span></td>
+                            <td>${pod.ready}</td>
+                            <td>${pod.restarts}</td>
+                            <td>${pod.age}</td>
+                        </tr>`;
+                    });
+                    html += '</table>';
+                    document.getElementById('pods').innerHTML = html;
+                })
+                .catch(error => {
+                    document.getElementById('pods').innerHTML = `<div class="error">Failed to load pods: ${error}</div>`;
+                });
+        }
+
+        function loadServices() {
+            fetch('/api/services')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        document.getElementById('services').innerHTML = `<div class="error">Error: ${data.error}</div>`;
+                        return;
+                    }
+                    let html = '<table><tr><th>Name</th><th>Namespace</th><th>Type</th><th>Cluster IP</th><th>External IP</th><th>Ports</th></tr>';
+                    data.services.forEach(service => {
+                        html += `<tr>
+                            <td>${service.name}</td>
+                            <td>${service.namespace}</td>
+                            <td>${service.type}</td>
+                            <td>${service.cluster_ip}</td>
+                            <td>${service.external_ip}</td>
+                            <td>${service.ports}</td>
+                        </tr>`;
+                    });
+                    html += '</table>';
+                    document.getElementById('services').innerHTML = html;
+                })
+                .catch(error => {
+                    document.getElementById('services').innerHTML = `<div class="error">Failed to load services: ${error}</div>`;
+                });
+        }
+
+        // Load all data when page loads
+        window.onload = function() {
+            loadClusterInfo();
+            loadNodes();
+            loadPods();
+            loadServices();
+        };
+    </script>
+</body>
+</html>
